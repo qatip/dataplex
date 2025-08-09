@@ -1,0 +1,22 @@
+-- Create weather_daily from BigQuery public NOAA GSOD data
+CREATE OR REPLACE TABLE dataplex_lab.weather_daily AS
+WITH base AS (
+  SELECT
+    DATE(CONCAT(CAST(year AS STRING), '-', LPAD(CAST(mo AS STRING), 2, '0'), '-', LPAD(CAST(da AS STRING), 2, '0'))) AS date,
+    NULLIF(temp, 999.9)  AS mean_f,
+    NULLIF(`max`,  999.9) AS max_f,
+    NULLIF(`min`,  999.9) AS min_f,
+    NULLIF(prcp,  99.99) AS prcp_in
+  FROM `bigquery-public-data.noaa_gsod.gsod2018`
+  WHERE wban = '94728'  -- Central Park, NYC
+),
+conv AS (
+  SELECT
+    date,
+    ROUND((mean_f - 32) * 5/9, 1) AS tmean_c,
+    ROUND((max_f  - 32) * 5/9, 1) AS tmax_c,
+    ROUND((min_f  - 32) * 5/9, 1) AS tmin_c,
+    ROUND(prcp_in * 25.4, 1)     AS prcp_mm
+  FROM base
+)
+SELECT * FROM conv;
